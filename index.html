@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Player Card Generator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0c10;color:#e8e9ec;font:15px/1.4 "Segoe UI",Ubuntu,Arial,sans-serif}
+main{display:flex;flex-wrap:wrap;gap:28px;max-width:1040px;margin:0 auto;padding:28px 18px}
+.panel{flex:1 1 320px}.view{flex:1 1 320px;text-align:center}
+h1{margin:0 0 4px;font-size:26px}p{color:#8a8f9a;margin:0 0 14px}
+label{display:block;font-size:11px;letter-spacing:.08em;color:#8a8f9a;margin:12px 0 4px}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #262a32;background:#16181d;color:inherit;font:inherit}
+input:focus{outline:2px solid #7c9cff}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.styles{display:flex;gap:8px;margin-top:4px}
+button{cursor:pointer;border:1px solid #262a32;background:#16181d;color:#8a8f9a;border-radius:10px;padding:9px 14px;font:inherit;font-weight:600}
+.styles button{flex:1}.styles button.on{background:#7c9cff;color:#0e0f12;border-color:#7c9cff}
+.dl{width:100%;margin-top:18px;background:#7c9cff;color:#0e0f12;border-color:#7c9cff;padding:12px}
+canvas{width:100%;max-width:450px;height:auto;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+</style>
+</head>
+<body>
+<main>
+<section class="panel">
+<h1>Player Card Generator</h1>
+<p>Введи ник и статистику, выбери стиль и скачай карточку PNG. Всё считается в браузере, фото никуда не загружается.</p>
+<label>СТИЛЬ</label>
+<div class="styles"><button data-s="neon" class="on">Neon</button><button data-s="gold">Gold</button><button data-s="ice">Ice</button></div>
+<label>НИК</label><input id="nick" value="Blizzard">
+<div class="row">
+<div><label>ЗВАНИЕ / ТИТУЛ</label><input id="title" value="Pro Player"></div>
+<div><label>КОМАНДА</label><input id="team" placeholder="Название команды"></div>
+<div><label>РОЛЬ</label><input id="role" placeholder="Например: Gold Lane"></div>
+<div><label>ГЕРОЙ</label><input id="hero" placeholder="Любимый герой"></div>
+</div>
+<label>РАНГ</label><input id="rank" placeholder="Например: Mythic Glory">
+<div class="row">
+<div><label>МАТЧИ</label><input id="matches" placeholder="1234"></div>
+<div><label>ВИНРЕЙТ, %</label><input id="wr" type="number" min="0" max="100" placeholder="58"></div>
+<div><label>KDA</label><input id="kda" placeholder="5.2"></div>
+<div><label>MVP</label><input id="mvp" placeholder="321"></div>
+</div>
+<label>ID / СЕРВЕР</label><input id="uid" placeholder="12345678 (1234)">
+<label>ФОТО (НЕОБЯЗАТЕЛЬНО)</label><input id="photo" type="file" accept="image/*">
+<button class="dl" id="dl">Скачать PNG</button>
+</section>
+<section class="view"><canvas id="c" width="900" height="1200"></canvas></section>
+</main>
+<script>
+const $=id=>document.getElementById(id),c=$('c'),x=c.getContext('2d');
+const S={
+ neon:{a:'#00e5ff',b:'#7c4dff',bg:['#05060f','#0c1030'],t:'#e8f7ff'},
+ gold:{a:'#ffcf5a',b:'#ff8a00',bg:['#0d0a04','#2a1a05'],t:'#fff4d6'},
+ ice:{a:'#7cc6ff',b:'#d8f1ff',bg:['#06101c','#0f2a4a'],t:'#eaf6ff'}};
+const F=['nick','title','team','role','hero','rank','matches','wr','kda','mvp','uid'];
+const MUTED='rgba(255,255,255,.55)';
+let style='neon',photo=null;
+function rr(a,b,w,h,r){x.beginPath();x.roundRect(a,b,w,h,r)}
+function T(t,px,py,size,col,w='700',al='center',max){
+ const f=()=>x.font=`${w} ${size}px "Segoe UI",Ubuntu,Arial,sans-serif`;
+ f();while(max&&x.measureText(t).width>max&&size>16){size-=2;f()}
+ x.textAlign=al;x.fillStyle=col;x.fillText(t,px,py)}
+function draw(){
+ const s=S[style],v=Object.fromEntries(F.map(k=>[k,$(k).value.trim()])),W=900,H=1200;
+ x.clearRect(0,0,W,H);
+ let g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,s.bg[0]);g.addColorStop(1,s.bg[1]);
+ rr(0,0,W,H,48);x.fillStyle=g;x.fill();
+ x.save();rr(0,0,W,H,48);x.clip();
+ x.globalAlpha=.07;x.strokeStyle=s.a;x.lineWidth=2;
+ for(let i=-H;i<W;i+=48){x.beginPath();x.moveTo(i,H);x.lineTo(i+H,0);x.stroke()}
+ x.globalAlpha=.25;
+ let rg=x.createRadialGradient(450,340,10,450,340,520);rg.addColorStop(0,s.a);rg.addColorStop(1,'rgba(0,0,0,0)');
+ x.fillStyle=rg;x.fillRect(0,0,W,H);x.restore();
+ rr(14,14,W-28,H-28,40);x.lineWidth=3;x.strokeStyle=s.a;x.globalAlpha=.8;x.stroke();x.globalAlpha=1;
+ T((v.title||'PRO PLAYER').toUpperCase(),450,98,28,s.a,'800','center',700);
+ if(v.team)T(v.team,450,140,24,MUTED,'600','center',700);
+ // аватар
+ x.save();x.beginPath();x.arc(450,340,150,0,7);x.closePath();x.clip();
+ if(photo){const r=Math.max(300/photo.width,300/photo.height),w=photo.width*r,h=photo.height*r;x.drawImage(photo,450-w/2,340-h/2,w,h)}
+ else{x.fillStyle='rgba(255,255,255,.06)';x.fillRect(300,190,300,300);T((v.nick[0]||'?').toUpperCase(),450,398,160,s.a,'800')}
+ x.restore();
+ let rg2=x.createLinearGradient(300,190,600,490);rg2.addColorStop(0,s.a);rg2.addColorStop(1,s.b);
+ x.beginPath();x.arc(450,340,160,0,7);x.lineWidth=8;x.strokeStyle=rg2;x.stroke();
+ // ник, роль, ранг
+ T(v.nick||'Nickname',450,600,96,s.t,'800','center',780);
+ const rh=[v.role,v.hero].filter(Boolean).join('  ·  ');
+ if(rh)T(rh,450,655,30,MUTED,'600','center',780);
+ if(v.rank){x.font='800 28px "Segoe UI",Ubuntu,Arial,sans-serif';
+  const w=Math.min(x.measureText(v.rank).width+56,780);rr(450-w/2,690,w,56,28);
+  let pg=x.createLinearGradient(450-w/2,0,450+w/2,0);pg.addColorStop(0,s.a);pg.addColorStop(1,s.b);
+  x.fillStyle=pg;x.fill();T(v.rank,450,729,28,'#0b0c10','800','center',w-40)}
+ // статистика
+ [['МАТЧИ',v.matches],['ВИНРЕЙТ',v.wr?v.wr+'%':''],['KDA',v.kda],['MVP',v.mvp]].forEach(([l,val],i)=>{
+  const bx=70+(i%2)*395,by=790+Math.floor(i/2)*160;
+  rr(bx,by,365,130,24);x.fillStyle='rgba(255,255,255,.06)';x.fill();
+  x.lineWidth=2;x.strokeStyle='rgba(255,255,255,.14)';x.stroke();
+  T(l,bx+30,by+42,20,MUTED,'700','left');
+  T(val||'—',bx+30,by+98,56,s.t,'800','left',300);
+  if(i===1&&+v.wr>0){rr(bx+30,by+112,305,8,4);x.fillStyle='rgba(255,255,255,.12)';x.fill();
+   rr(bx+30,by+112,305*Math.min(+v.wr,100)/100,8,4);x.fillStyle=s.a;x.fill()}
+ });
+ T(v.uid?'ID  '+v.uid:'PLAYER CARD',450,1140,22,MUTED,'600','center',760);
+}
+document.querySelectorAll('.panel input:not([type=file])').forEach(e=>e.addEventListener('input',draw));
+document.querySelectorAll('.styles button').forEach(b=>b.onclick=()=>{
+ style=b.dataset.s;document.querySelectorAll('.styles button').forEach(o=>o.classList.toggle('on',o===b));draw()});
+$('photo').onchange=e=>{const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{photo=im;draw()};im.src=r.result};r.readAsDataURL(f)};
+$('dl').onclick=()=>c.toBlob(b=>{const a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download=($('nick').value.trim()||'player')+'-card.png';a.click();URL.revokeObjectURL(a.href)});
+draw();
+</script>
+</body>
+</html>
